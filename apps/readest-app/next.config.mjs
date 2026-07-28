@@ -76,7 +76,11 @@ const nextConfig = {
       // Turbopack rejects absolute paths in resolveAlias ("server relative
       // imports not implemented") — use a project-relative path.
       fflate: './node_modules/fflate',
-      ...(appPlatform !== 'web' ? { '@tursodatabase/database-wasm': './src/utils/stub.ts' } : {}),
+      // tsconfig paths are not picked up by Turbopack; alias them here.
+      'js-mdict': '../../packages/js-mdict/src/index.ts',
+      ...(appPlatform !== 'web'
+        ? { '@tursodatabase/database-wasm': './src/utils/stub.ts' }
+        : { 'tauri-plugin-turso': './src/utils/stub.ts' }),
     },
   },
   transpilePackages: [
