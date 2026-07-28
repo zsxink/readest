@@ -3,6 +3,8 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 RUN corepack prepare pnpm@11.1.1 --activate
+ARG NPM_CONFIG_REGISTRY
+ENV NPM_CONFIG_REGISTRY=$NPM_CONFIG_REGISTRY
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/readest-app/package.json ./apps/readest-app/
@@ -31,6 +33,8 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 RUN corepack prepare pnpm@11.1.1 --activate
+ARG NPM_CONFIG_REGISTRY
+ENV NPM_CONFIG_REGISTRY=$NPM_CONFIG_REGISTRY
 WORKDIR /app
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
