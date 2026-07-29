@@ -61,7 +61,6 @@
       }
     },
     "macOS": {
-      "signing": false,
       "minimumSystemVersion": "12.0"
     },
     "linux": {
