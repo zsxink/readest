@@ -7,6 +7,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'tauri://localhost',
+  'https://read-tp.zsxink.qzz.io',
 ];
 
 const corsOptions = {
