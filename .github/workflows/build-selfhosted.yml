@@ -101,7 +101,17 @@ jobs:
       - name: initialize Android project files
         if: matrix.config.release == 'android'
         shell: bash
-        run: pnpm tauri android init
+        run: |
+          pnpm tauri android init
+          # ic_launcher.xml references @color/ic_launcher_background but init
+          # doesn't generate colors.xml. Create it to avoid AAPT build failure.
+          mkdir -p src-tauri/gen/android/app/src/main/res/values
+          cat > src-tauri/gen/android/app/src/main/res/values/colors.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="ic_launcher_background">#FFFFFF</color>
+          </resources>
+          EOF
         working-directory: apps/readest-app
 
       - name: build Android APK
