@@ -152,11 +152,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: readest-macos-${{ github.ref_name }}
-          path: apps/readest-app/src-tauri/target/release/bundle/dmg/*.dmg
+          path: target/release/bundle/dmg/*.dmg
 
       - name: upload Windows installer
         if: matrix.config.release == 'windows'
         uses: actions/upload-artifact@v4
         with:
           name: readest-windows-${{ github.ref_name }}
-          path: apps/readest-app/src-tauri/target/release/bundle/nsis/*.exe
+          path: target/release/bundle/nsis/*.exe
