@@ -22,5 +22,3 @@ export class Database {
     throw new Error('NativeDatabaseService is not available on web');
   }
 }
-
-export {};
