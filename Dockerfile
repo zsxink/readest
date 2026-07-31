@@ -5,6 +5,10 @@ RUN corepack enable
 RUN corepack prepare pnpm@11.1.1 --activate
 ARG NPM_CONFIG_REGISTRY
 ENV NPM_CONFIG_REGISTRY=$NPM_CONFIG_REGISTRY
+# pnpm 11 does not honor NPM_CONFIG_REGISTRY; write .npmrc so install fetches
+# from the mirror instead of registry.npmjs.org (slow/unreliable on some hosts).
+ARG NPM_REGISTRY
+RUN if [ -n "$NPM_REGISTRY" ]; then printf 'registry=%s\n' "$NPM_REGISTRY" > /root/.npmrc; fi
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/readest-app/package.json ./apps/readest-app/
