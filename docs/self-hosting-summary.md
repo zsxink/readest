@@ -16,6 +16,7 @@
 | 用户注册 | ❌ 已关闭（DISABLE_SIGNUP=true），仅允许已有账号登录 |
 | 已注册用户 | 仅 `yqylooq@qq.com` 一个账号 |
 | 存储配额 | 20GB/用户 |
+| **电子书上传** | ✅ **已修复**（2026-07-31）：DB 迁移 001–017 全部应用 + nginx 加 `/readest-files/` 路由到 MinIO |
 
 ---
 
@@ -72,6 +73,7 @@ MINIO_ROOT_PASSWORD=PkMgzn7gtWP7H1KvODl_RmoSPE7930_Ja-nutChFBS8
   - `/auth/v1/` → **`http://127.0.0.1:8000`**（Kong → gotrue API）
   - `/rest/v1/` → **`http://127.0.0.1:8000`**（Kong → PostgREST API）
   - `/storage/` → **`http://127.0.0.1:9000`**（MinIO S3）
+  - `/readest-files/` → **`http://127.0.0.1:9000`**（MinIO S3，path-style 预签名上传下载）
 - `client_max_body_size` 需设为 `100M`（电子书上传）
 
 > ⚠️ **重要**: `/auth/` 路由必须只匹配 `/auth/v1/`，不能匹配 `/auth/`。否则页面请求（如 `/auth/`、`/auth/callback`）会被发到 Kong 返回 `"no Route matched with those values"`。`/rest/` 同理。
@@ -113,6 +115,7 @@ client 容器的运行时环境变量通过 `compose.yaml` 注入，用户访问
 
 **现场 nginx 修改（未入 git）：**
 - `/etc/nginx/conf.d/read-tp.zsxink.qzz.io.conf` — `/auth/` → `/auth/v1/`，`/rest/` → `/rest/v1/`
+- 同文件新增 `location /readest-files/` → `http://127.0.0.1:9000`，含 `proxy_set_header Authorization "";` 与 `client_max_body_size 100M;`（MinIO 上传必需，否则预签名 URL 的 PUT 会 404/400）
 
 ---
 
