@@ -169,6 +169,27 @@ impl<R: Runtime> NativeBridge<R> {
         Err(crate::Error::UnsupportedPlatformError)
     }
 
+    pub fn has_ambient_light_sensor(&self) -> crate::Result<HasAmbientLightSensorResponse> {
+        Ok(HasAmbientLightSensorResponse {
+            available: false,
+            error: None,
+        })
+    }
+
+    pub fn start_ambient_light_updates(&self) -> crate::Result<AmbientLightUpdatesResponse> {
+        Ok(AmbientLightUpdatesResponse {
+            success: false,
+            error: Some("unsupported".to_string()),
+        })
+    }
+
+    pub fn stop_ambient_light_updates(&self) -> crate::Result<AmbientLightUpdatesResponse> {
+        Ok(AmbientLightUpdatesResponse {
+            success: true,
+            error: None,
+        })
+    }
+
     pub fn get_external_sdcard_path(&self) -> crate::Result<GetExternalSDCardPathResponse> {
         Err(crate::Error::UnsupportedPlatformError)
     }
@@ -291,6 +312,15 @@ impl<R: Runtime> NativeBridge<R> {
             "clip_url plugin is mobile-only; desktop callers should invoke the top-level command"
                 .to_string(),
         ))
+    }
+
+    /// Share-Extension clip files only exist in the iOS App Group
+    /// container — desktop has no share extension.
+    pub fn read_share_clip_html(
+        &self,
+        _payload: ReadShareClipHtmlRequest,
+    ) -> crate::Result<ReadShareClipHtmlResponse> {
+        Ok(ReadShareClipHtmlResponse { html: None })
     }
 
     // ── Keyed secure key-value store ────────────────────────────────────

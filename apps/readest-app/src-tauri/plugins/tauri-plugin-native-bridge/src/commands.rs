@@ -55,6 +55,14 @@ pub(crate) async fn set_text_selection_suppressed<R: Runtime>(
 }
 
 #[command]
+pub(crate) async fn read_share_clip_html<R: Runtime>(
+    app: AppHandle<R>,
+    payload: ReadShareClipHtmlRequest,
+) -> Result<ReadShareClipHtmlResponse> {
+    app.native_bridge().read_share_clip_html(payload)
+}
+
+#[command]
 pub(crate) async fn install_package<R: Runtime>(
     app: AppHandle<R>,
     payload: InstallPackageRequest,
@@ -165,6 +173,27 @@ pub(crate) async fn set_screen_brightness<R: Runtime>(
     payload: SetScreenBrightnessRequest,
 ) -> Result<SetScreenBrightnessResponse> {
     app.native_bridge().set_screen_brightness(payload)
+}
+
+#[command]
+pub(crate) async fn has_ambient_light_sensor<R: Runtime>(
+    app: AppHandle<R>,
+) -> Result<HasAmbientLightSensorResponse> {
+    app.native_bridge().has_ambient_light_sensor()
+}
+
+#[command]
+pub(crate) async fn start_ambient_light_updates<R: Runtime>(
+    app: AppHandle<R>,
+) -> Result<AmbientLightUpdatesResponse> {
+    app.native_bridge().start_ambient_light_updates()
+}
+
+#[command]
+pub(crate) async fn stop_ambient_light_updates<R: Runtime>(
+    app: AppHandle<R>,
+) -> Result<AmbientLightUpdatesResponse> {
+    app.native_bridge().stop_ambient_light_updates()
 }
 
 #[command]
