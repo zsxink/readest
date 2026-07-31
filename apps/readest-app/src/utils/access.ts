@@ -6,23 +6,41 @@ import { isWebAppPlatform } from '@/services/environment';
 import { getDailyUsage } from '@/services/translators/utils';
 import { getRuntimeConfig } from '@/services/runtimeConfig';
 
+interface AppMetadata {
+  plan?: UserPlan;
+  storage_usage_bytes?: number;
+  storage_purchased_bytes?: number;
+  [key: string]: unknown;
+}
+
 interface Token {
   plan: UserPlan;
   storage_usage_bytes: number;
   storage_purchased_bytes: number;
-  [key: string]: string | number;
+  app_metadata?: AppMetadata;
+  [key: string]: unknown;
 }
+
+/**
+ * GoTrue v2 keeps user metadata inside the JWT's `app_metadata` object and
+ * never promotes those keys to top-level claims, so a self-hosted deployment
+ * never carries a top-level `plan`. Read it from `app_metadata` as a fallback.
+ */
+const getPlan = (data: Token): UserPlan => data['plan'] || data['app_metadata']?.['plan'] || 'free';
+
+const getPurchasedStorageBytes = (data: Token): number =>
+  data['storage_purchased_bytes'] || data['app_metadata']?.['storage_purchased_bytes'] || 0;
 
 export const getSubscriptionPlan = (token: string): UserPlan => {
   const data = jwtDecode<Token>(token) || {};
-  return data['plan'] || 'free';
+  return getPlan(data);
 };
 
 export const getUserProfilePlan = (token: string): UserPlan => {
   const data = jwtDecode<Token>(token) || {};
-  let plan = data['plan'] || 'free';
+  let plan = getPlan(data);
   if (plan === 'free') {
-    const purchasedQuota = data['storage_purchased_bytes'] || 0;
+    const purchasedQuota = getPurchasedStorageBytes(data);
     if (purchasedQuota > 0) {
       plan = 'purchase';
     }
@@ -102,9 +120,9 @@ export const STORAGE_QUOTA_GRACE_BYTES = 10 * 1024 * 1024; // 10 MB grace
 
 export const getStoragePlanData = (token: string) => {
   const data = jwtDecode<Token>(token) || {};
-  const plan = data['plan'] || 'free';
-  const usage = data['storage_usage_bytes'] || 0;
-  const purchasedQuota = data['storage_purchased_bytes'] || 0;
+  const plan = getPlan(data);
+  const usage = data['storage_usage_bytes'] || data['app_metadata']?.['storage_usage_bytes'] || 0;
+  const purchasedQuota = getPurchasedStorageBytes(data);
   const runtimeConfig = getRuntimeConfig();
   const fixedQuota =
     runtimeConfig?.storageFixedQuota ?? parseInt(process.env['STORAGE_FIXED_QUOTA'] ?? '0');
@@ -129,7 +147,7 @@ export const getTranslationQuota = (plan: UserPlan): number => {
 
 export const getTranslationPlanData = (token: string) => {
   const data = jwtDecode<Token>(token) || {};
-  const plan: UserPlan = data['plan'] || 'free';
+  const plan: UserPlan = getPlan(data);
   const usage = getDailyUsage() || 0;
   const quota = getTranslationQuota(plan);
 
@@ -142,7 +160,7 @@ export const getTranslationPlanData = (token: string) => {
 
 export const getDailyTranslationPlanData = (token: string) => {
   const data = jwtDecode<Token>(token) || {};
-  const plan = data['plan'] || 'free';
+  const plan = getPlan(data);
   const quota = getTranslationQuota(plan);
 
   return {
