@@ -5,22 +5,8 @@ on:
     tags:
       - 'xv*'
 
-permissions:
-  contents: write
-
 jobs:
-  create-release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: create GitHub Release for this tag
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release view "$GITHUB_REF_NAME" || \
-            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
-
   build:
-    needs: create-release
     strategy:
       fail-fast: false
       matrix:
@@ -164,18 +150,21 @@ jobs:
 
       - name: upload Android APK
         if: matrix.config.release == 'android'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.ref_name }}" apps/readest-app/Readest_${{ github.ref_name }}_arm64.apk --clobber
+        uses: actions/upload-artifact@v4
+        with:
+          name: readest-android-${{ github.ref_name }}
+          path: apps/readest-app/Readest_${{ github.ref_name }}_arm64.apk
 
       - name: upload macOS DMG
         if: matrix.config.release == 'macos'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.ref_name }}" target/release/bundle/dmg/*.dmg --clobber
+        uses: actions/upload-artifact@v4
+        with:
+          name: readest-macos-${{ github.ref_name }}
+          path: target/release/bundle/dmg/*.dmg
 
       - name: upload Windows installer
         if: matrix.config.release == 'windows'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.ref_name }}" target/release/bundle/nsis/*.exe --clobber
+        uses: actions/upload-artifact@v4
+        with:
+          name: readest-windows-${{ github.ref_name }}
+          path: target/release/bundle/nsis/*.exe
