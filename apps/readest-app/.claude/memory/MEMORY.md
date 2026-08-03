@@ -35,11 +35,15 @@
 - #5067 shelf progress never pulled `mergeBookMetadata` subset = what travels
 - [koplugin local_present sweep](koplugin-local-present-sweep-noop.md) UNFIXED; OR-merge defeats stale sweep; fix = rm readest_library.sqlite3
 - [10k library breaks /sync pull](sync-pull-10k-worker-1102.md) MERGED #5364; CF 1102; paged books pull synced_at ASC + tie-completion; old clients wedge till app update
+- [#5444 CORS preflight cache fix](cors-preflight-cache-fix-5444.md) VERIFIED in prod: OPTIONS -83% in minutes; wrangler OAuth token works for CF GraphQL analytics (1d max range)
 ## Build, Testing & CI
+- [Turbopack dev stale chunk phantom](turbopack-dev-stale-chunk-phantom.md) reload does NOT help; fiber String(f.type) to verify; rm -rf .next + restart
+- [Screenshot baselines unregenerable](vitest-screenshot-baseline-relative-path.md) FIXED in #5351; relative resolveScreenshotPath -> server.fs denies write; `--update` was a silent no-op; allowWrite is NOT it
 - #4906 nightly sharun hang pre-seed + timeouts
 - [format:check gate](verify-format-check-gate.md) · [Worktree rebase submodule drift](worktree-rebase-submodule-drift.md)
 - Android CDP: [e2e lane](android-cdp-e2e-lane.md); [profiling](cdp-android-webview-profiling.md); [double-tap](android-e2e-doubletap-cdp-gesture.md)
 - [Android e2e local repro](android-e2e-local-repro-workflow.md) dev-android vs debug run-as
+- [Nightly e2e fix](android-e2e-nightly-fix-5453.md) PR #5453; immersive prompt eats touches (screencap first!); openFixtureBook cold-start; halo max(100%,44px); wrapper/HintInfo pointer-none
 - [iOS sim drive via dev-server relay](ios-sim-drive-via-dev-server-relay.md)
 - [iOS sim build+drive workflow](ios-sim-build-and-drive-workflow.md) `--target aarch64-sim`; CLI rename fails so take the app from the **xcarchive**, not `build/arm64-sim`
 - [Tauri Rust↔JS parser parity](tauri-parser-parity-tests.md)
@@ -62,8 +66,15 @@
 - macOS 26 Tahoe close→black window (#4875) `minimize()` not `hide()`
 - [#5295 Win fullscreen vs maximized](win-fullscreen-maximized-taskbar-5295.md) MERGED #5380; tao apply_diff re-issues SW_MAXIMIZE; unmaximize-first on Windows only
 - #4885 iOS brightness lock · [#4917 iOS share .txt stuck](ios-share-txt-stuck-supportstext.md)
+- [0.11.20 iOS .txt/.md share sheet lost](ios-txt-share-sheet-tauri211-fileassoc.md) MERGED #5415; tauri-cli 2.11 fileAssociations clobber hand-tuned CFBundleDocumentTypes; device-verify pending
+- [#5397 Photos save crash](ios-photos-add-usage-description-5397.md) MERGED #5405, device-verify pending; missing `NSPhotoLibraryAddUsageDescription`; "Save to Photos" is WebKit's menu not our code; key also un-hides "Save Image" in our share sheet
 ## Reader Features & UI
+- [TTS listening counts as reading stats](tts-listening-counts-as-reading-stats.md) MERGED #5450; `view.getCFIProgress` is DEAD after `view.close()`, rebuild from book+resolveCFI; Android/iOS/CarPlay device verify PENDING
+- [#5398/#3870 annotations hub](annotations-hub-5398-3870.md) MERGED #5448; shared filterBooknotes/facets; toolbar = icon row + filter dropdown (must merge injected menuClassName); header search icon is per-tab contextual
+- [Mobile sheet virtuoso first-paint blank](mobile-sheet-virtuoso-first-paint-blank.md) PRE-EXISTING, no issue filed; blank until first touch
+- [PR #5389 library full-text search review](pr-5389-library-search-review.md) uncapped contains mode blocks; real-text bench 130MB/s; plan in .agents/plans
 - Resolved/stable feature memories → [Reader Feature Fixes](reader-feature-fixes.md) (PDF viewer, selection, dict, toolbar, RSVP, widgets, misc)
+- [#5406 TTS vs proofread doc sync](tts-proofread-doc-sync-5406.md) MERGED #5416; createDocument bypasses transformTarget 'data' transforms so auto-advanced sections spoke raw text; TTS docs now replay the display pipeline; same PR gives MD books a transformTarget + loadContent srcdoc path (createDocument stays raw or TTS double-transforms)
 - [#5262 clip sign-in capture](clip-signin-interactive-capture-5262.md) MERGED #5377; browser cookies unreachable; interactive clip mode + Safari share-ext DOM capture; xcodegen-in-worktree symlink trick
 - [#5294 web-novel URL import](webnovel-url-import-5294.md) MERGED #5381; multi-chapter buildEpub not feed-book; re-import updates in place via metaHash but exact-URL-keyed; sanitizeForParsing strips ALL meta → clip pickMetaContent dead code UNFIXED
 - [Readest Voice self-hosted TTS](selfhosted-premium-tts-plans.md) APPROVED 2026-07-08; not started
@@ -73,8 +84,13 @@
 - [#5216 Persian RLM half-space](rlm-bidi-mark-shaping-5216.md) PR #5361 MERGED but sanitizer half is dead code; XMLSerializer never emits `&#x200f;`; real cause = font-fallback shaping
 - [#5362 image zoom % was fit-relative](image-viewer-fit-relative-zoom-5362.md) MERGED #5365; `will-change` does NOT pin raster scale; dataUrl is byte-exact; SR is the wrong tool
 - [#5250 invert img dead w/ overrideColor](invert-img-dark-override-5250.md) PR #5383 open, VERIFIED on Xiaomi 13; #4763 dup `filter` last-wins + multiply-on-black; test the cascade not string presence
-- Paragraph mode: [toggle/resume #4717](paragraph-mode-toggle-resume-4717.md); [exit #4474](paragraph-mode-accidental-exit-4474.md); [#5275 styling](paragraph-mode-styling-5275.md) MERGED #5338; solid backdrop or ghosting
+- Paragraph mode: [toggle/resume #4717](paragraph-mode-toggle-resume-4717.md); [exit #4474](paragraph-mode-accidental-exit-4474.md); [#5275 styling](paragraph-mode-styling-5275.md) MERGED #5338; solid backdrop or ghosting; [#5246 display settings](paragraph-mode-display-settings-5246.md) MERGED #5403; font on frame or 66ch won't scale
+- [#5414 Edge silence untrimmed on iOS](edge-tts-baked-silence-ios-native-5414.md) MERGED #5417, device-verify pending; Edge MP3s = ~1s baked silence (0.18 head + 0.8 tail), native AVPlayer path never trimmed it; TAIL-only fix via `forwardPlaybackEndTime`; macOS NOT affected; also fixed #5326 `scaleGap` Math.round zeroing both gaps
+- [#5178 auto-hide cursor](autohide-cursor-5178.md) MERGED #5404; dormant foliate CursorAutohider + attr on view NOT renderer; `autohideCursor` top-level SystemSettings (not whitelisted = per-device); shipped default-on
 - [#5342 footer pills go black](footer-pill-vs-blend-5342.md) MERGED #5347; blend composites the container as a group; pill bg and `mix-blend-difference` cannot coexist
+- [#5351 popup restyle](popup-filter-containing-block-5351.md) MERGED; ancestor `filter` = containing block + stacking context; new `theme-dark:` variant; `text-foreground` is an undefined token
+- [#5303 negative top margin lifts header into notch](header-notch-negative-margin-5303.md) MERGED #5447, VERIFIED Xiaomi 13; band bottom==content top, 16px floor; z-10 ONLY when lifted else it covers desktop toolbar (CI e2e)
+- [#5394 Ambient Mode (light sensor)](ambient-mode-light-sensor-5394.md) MERGED; `emitOrQueue` is one-shot-only (streams = unbounded queue), chain `void` async subscription toggles, themeStore vs `getThemeCode` defaults must match
 - Proofread: [#4700](proofread-enhancements-4700.md); [#4781 CRDT](proofread-per-book-crdt-sync.md); #4859 edit toggle; [#5277 fonts lost](proofread-rule-change-font-loss-5277.md) MERGED #5345; recreateViewer double-mount + non-idempotent transformStylesheet
 - [OPDS fixes](opds-fixes.md) #4479 #4502 #4503 #4749 #4782 #4272 Basic-400s TLS#4988 Calibre-authors#5183 http-selflinks#5300
 - koplugin: [#4374 cover upload](koplugin-cover-upload.md); #5094 gesture + upload current; [#4954 slow open](koplugin-library-open-mosaic-cache-4954.md)
@@ -87,6 +103,7 @@
 - [Library/reader texture #4743](library-reader-separate-texture-4743.md) · [list series overflow #4796](list-view-series-overflow-4796.md)
 - [#3797 recently-read shelf](recent-read-shelf-3797.md) · #3889 auto-import folders
 - [auto-import re-imports dupes](auto-import-duplicate-files-reimport.md) MERGED #5337; one book = one `filePath`, needs `altFilePaths`
+- [#5411 PDF metaHash filename salt](pdf-metahash-filename-salt-5411.md) MERGED #5412; generic PPT-export metadata collapsed distinct PDFs; salt lost after import so re-parse sites must preserve
 - #5079 Time Remaining sort "no time" bucket OUTSIDE sort multiplier
 - memo comparator swallows new prop
 - [#5175 select bar hides last book](select-mode-actions-overlap-last-book-5175.md) measure bar height into Virtuoso Footer spacer
@@ -100,6 +117,7 @@
 - [#5279 md YAML frontmatter](markdown-yaml-frontmatter-5279.md) MERGED #5344; http covers stay `coverImageUrl` (CORS), data URIs decoded; isbn = identifier; dedup race UNFIXED
 - Style: `getLayoutStyles()` always, `getColorStyles()` when overriding; `transformStylesheet()` rewrites EPUB CSS
 - TTS `#ttsSectionIndex`; insets: native plugin → useSafeAreaInsets → styles; Dropdowns `DropdownContext`
+- [#5259 dropdown viewport fix](dropdown-floating-ui-portal-5259.md) MERGED #5392 (rewritten in place to CSS-anchored clamp); Floating UI portal broke TalkBack/VoiceOver — portal kills traversal order, axe/CDP trees can't catch it, only a connected service can; wrap needs `width:max-content` via `:where` or menus collapse
 - Stale settings closure: persist `useSettingsStore.getState().settings` ([#4780](webdav-connect-nullified-4780.md))
 - Page margins not live #4898 in-place mutation froze memo
 - [#5301 "Column Gap"->"Additional Margin"](column-gap-additional-margins-5301.md) gap tied to L/R margins; label rename only

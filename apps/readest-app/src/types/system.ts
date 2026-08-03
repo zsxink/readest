@@ -194,6 +194,7 @@ export interface AppService {
     handleProgress: ProgressHandler,
     hash: string,
     temp?: boolean,
+    media?: string,
   ): Promise<string | undefined>;
   uploadReplicaFile(
     kind: string,
@@ -239,4 +240,6 @@ export interface AppService {
     base: BaseDir,
     opts?: DatabaseOpts,
   ): Promise<DatabaseService>;
+  databaseExists(path: string, base: BaseDir): Promise<boolean>;
+  deleteDatabase(path: string, base: BaseDir): Promise<void>;
 }
