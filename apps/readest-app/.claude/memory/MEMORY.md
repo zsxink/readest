@@ -54,6 +54,7 @@
 - [Xcode 26.2 broke iOS builds](xcode26-swiftrs-ios-build-broken.md) vendored `packages/swift-rs`
 - [iOS SPM Sentry proxy hang](ios-spm-sentry-proxy-tls-download.md)
 - [CI/PR delivery + push keepalive](ci-pr-delivery-and-push.md) fork pushes need SSH; `gh` HTTPS lacks `workflow` scope
+- [Fork self-hosted release artifacts](fork-selfhosted-release-artifacts.md) `xv*` tag → Actions artifacts; Android ARM64 signed APK path and required secrets
 - [tauri 2.11 remote ACL app commands](tauri-211-remote-acl-app-commands.md) webdriver = remote origin
 ## Platform Compat
 - Sentry #5112/#5053/#5070: native dumps = SEPARATE helper, never re-exec
