@@ -163,6 +163,14 @@ sudo systemctl reload nginx
 | `ANON_KEY` | 见 §1.3 的 `ANON_KEY` |
 | `API_BASE_URL` | `https://read-tp.zsxink.qzz.io` |
 
+如需为 Tauri 的应用内更新生成 `.sig` 文件，还需配置下列密钥。私钥和密码只存放在 GitHub Actions Secrets，绝不提交到仓库：
+
+| Secret / 配置 | 值 |
+|---|---|
+| `TAURI_SIGNING_PRIVATE_KEY` | `readest-updater.key` 的完整私钥内容 |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | 生成该私钥时使用的密码 |
+| `apps/readest-app/src-tauri/tauri.conf.json` → `plugins.updater.pubkey` | 与上述私钥匹配的公钥：`dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhFQkY2QjY4QkUzMEEyClJXU2lNTDVvYTcrT0FOQ0ZWZVNjNGcrWHN3ODRqQXJVTkc1dUFHUHJVclo3OU9IN2R5NTJnM3FHCg==` |
+
 ### 4.2 创建工作流文件
 
 创建 `.github/workflows/build-selfhosted.yml`（基于 `docs/self-hosting-guide.md` §5 模板扩写）。
