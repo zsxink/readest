@@ -5,10 +5,22 @@ on:
     tags:
       - 'xv*'
 
-permissions: read-all
+permissions:
+  contents: write
 
 jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: create GitHub Release for this tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" || \
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
+
   build:
+    needs: create-release
     strategy:
       fail-fast: false
       matrix:
@@ -34,9 +46,13 @@ jobs:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.ANON_KEY }}
       NEXT_PUBLIC_APP_PLATFORM: tauri
       NEXT_PUBLIC_API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      NEXT_PUBLIC_DISABLE_UPDATER: 'true'
+      READEST_DISABLE_UPDATER: 'true'
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - name: initialize git submodules
         run: git submodule update --init --recursive
@@ -114,19 +130,26 @@ jobs:
           EOF
         working-directory: apps/readest-app
 
+      - name: configure Android release signing
+        if: matrix.config.release == 'android'
+        shell: bash
+        run: |
+          cd apps/readest-app/src-tauri/gen/android
+          {
+            echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}"
+            echo "password=${{ secrets.ANDROID_KEY_PASSWORD }}"
+            echo "storeFile=$RUNNER_TEMP/keystore.jks"
+          } > keystore.properties
+          base64 -d <<< "${{ secrets.ANDROID_KEY_BASE64 }}" > "$RUNNER_TEMP/keystore.jks"
+
       - name: build Android APK
         if: matrix.config.release == 'android'
         shell: bash
         run: |
           cd apps/readest-app/
           version=${{ github.ref_name }}
-          pnpm tauri android build -t aarch64
-          # Find the generated APK (output path varies by Gradle config/version)
-          apk=$(find src-tauri/gen/android/app/build/outputs -name "*.apk" -print -quit)
-          if [ -z "$apk" ]; then
-            echo "ERROR: no APK found in build outputs"
-            exit 1
-          fi
+          pnpm tauri android build --target aarch64 --split-per-abi
+          apk=src-tauri/gen/android/app/build/outputs/apk/arm64-v8a/release/app-arm64-v8a-release.apk
           cp "$apk" "Readest_${version}_arm64.apk"
           echo "Copied $apk -> Readest_${version}_arm64.apk"
 
@@ -137,26 +160,22 @@ jobs:
           NODE_OPTIONS: '--max-old-space-size=8192'
         run: |
           cd apps/readest-app/
-          version=${{ github.ref_name }}
           pnpm tauri build ${{ matrix.config.args }}
 
-      - name: upload Android APKs
+      - name: upload Android APK
         if: matrix.config.release == 'android'
-        uses: actions/upload-artifact@v4
-        with:
-          name: readest-android-${{ github.ref_name }}
-          path: apps/readest-app/Readest_${{ github.ref_name }}_*.apk
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.ref_name }}" apps/readest-app/Readest_${{ github.ref_name }}_arm64.apk --clobber
 
       - name: upload macOS DMG
         if: matrix.config.release == 'macos'
-        uses: actions/upload-artifact@v4
-        with:
-          name: readest-macos-${{ github.ref_name }}
-          path: target/release/bundle/dmg/*.dmg
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.ref_name }}" target/release/bundle/dmg/*.dmg --clobber
 
       - name: upload Windows installer
         if: matrix.config.release == 'windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: readest-windows-${{ github.ref_name }}
-          path: target/release/bundle/nsis/*.exe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.ref_name }}" target/release/bundle/nsis/*.exe --clobber
