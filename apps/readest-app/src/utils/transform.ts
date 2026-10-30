@@ -11,6 +11,7 @@ import {
 import { DBBookConfig, DBBook, DBBookNote } from '@/types/records';
 import { sanitizeString } from './sanitize';
 import { buildFeedBookUrl } from '@/services/rss/feedBookUrl';
+import { restoreAbsBookFields } from './audiobook';
 
 export const transformBookConfigToDB = (bookConfig: unknown, userId: string): DBBookConfig => {
   const {
@@ -74,12 +75,14 @@ export const transformBookToDB = (book: unknown, userId: string): DBBook => {
     author,
     groupId,
     groupName,
+    groupUpdatedAt,
     tags,
     progress,
     readingStatus,
     readingStatusUpdatedAt,
     coverHash,
     coverUpdatedAt,
+    pageCount,
     metadata,
     metadataUpdatedAt,
     createdAt,
@@ -97,6 +100,7 @@ export const transformBookToDB = (book: unknown, userId: string): DBBook => {
     author: sanitizeString(author)!,
     group_id: groupId,
     group_name: sanitizeString(groupName),
+    group_updated_at: groupUpdatedAt ? new Date(groupUpdatedAt).toISOString() : null,
     tags: tags,
     progress: progress,
     reading_status: readingStatus,
@@ -105,6 +109,7 @@ export const transformBookToDB = (book: unknown, userId: string): DBBook => {
       : null,
     cover_hash: coverHash ?? null,
     cover_updated_at: coverUpdatedAt ? new Date(coverUpdatedAt).toISOString() : null,
+    page_count: pageCount ?? null,
     source_title: sanitizeString(sourceTitle),
     metadata: metadata ? sanitizeString(JSON.stringify(metadata)) : null,
     metadata_updated_at: metadataUpdatedAt ? new Date(metadataUpdatedAt).toISOString() : null,
@@ -124,12 +129,14 @@ export const transformBookFromDB = (dbBook: DBBook): Book => {
     author,
     group_id,
     group_name,
+    group_updated_at,
     tags,
     progress,
     reading_status,
     reading_status_updated_at,
     cover_hash,
     cover_updated_at,
+    page_count,
     source_title,
     metadata,
     metadata_updated_at,
@@ -147,6 +154,7 @@ export const transformBookFromDB = (dbBook: DBBook): Book => {
     author,
     groupId: group_id,
     groupName: group_name,
+    groupUpdatedAt: group_updated_at ? new Date(group_updated_at).getTime() : null,
     tags: tags,
     progress: progress,
     readingStatus: reading_status as ReadingStatus,
@@ -163,10 +171,19 @@ export const transformBookFromDB = (dbBook: DBBook): Book => {
     deletedAt: deleted_at ? new Date(deleted_at).getTime() : null,
     uploadedAt: uploaded_at ? new Date(uploaded_at).getTime() : null,
   };
+  // Only when set: an undefined key would wipe the local count in the pull
+  // merge's `{ ...local, ...remote }` spread.
+  if (page_count != null) book.pageCount = page_count;
   // Native cloud DBBook has no `url` column; a feed book carries its feed URL in
   // metadata so the reader can rebuild the feed:// descriptor here.
   if (!book.url && book.metadata?.feedUrl) {
     book.url = buildFeedBookUrl(book.metadata.feedUrl);
+  }
+  // Same story for an ABS stub, whose identity is its `abs://` filePath: no
+  // column carries it (and the push strips filePath as device-local), so it
+  // rides in metadata and is rebuilt here along with the badge fields.
+  if (book.format === 'ABS') {
+    restoreAbsBookFields(book);
   }
   return book;
 };
@@ -186,6 +203,7 @@ export const transformBookNoteToDB = (bookNote: unknown, userId: string): DBBook
     color,
     note,
     global,
+    ink,
     createdAt,
     updatedAt,
     deletedAt,
@@ -206,6 +224,8 @@ export const transformBookNoteToDB = (bookNote: unknown, userId: string): DBBook
     color,
     note,
     global,
+    // Absent for other notes, so an upsert never clears stored strokes.
+    ink,
     created_at: new Date(createdAt ?? Date.now()).toISOString(),
     updated_at: new Date(updatedAt ?? Date.now()).toISOString(),
     // note that only null deleted_at is updated to the database, undefined is not
@@ -228,6 +248,7 @@ export const transformBookNoteFromDB = (dbBookNote: DBBookNote): BookNote => {
     color,
     note,
     global,
+    ink,
     created_at,
     updated_at,
     deleted_at,
@@ -247,6 +268,9 @@ export const transformBookNoteFromDB = (dbBookNote: DBBookNote): BookNote => {
     color: color as HighlightColor,
     note,
     global,
+    // No key without strokes: a pulled note is merged over the local one, and
+    // a server without the column must not wipe strokes held locally.
+    ...(ink ? { ink } : {}),
     createdAt: new Date(created_at!).getTime(),
     updatedAt: new Date(updated_at!).getTime(),
     deletedAt: deleted_at ? new Date(deleted_at).getTime() : null,

@@ -1,7 +1,8 @@
 import { READEST_OPDS_USER_AGENT } from '@/services/constants';
 import { NextRequest, NextResponse } from 'next/server';
-import { deserializeOPDSCustomHeaders } from '@/app/opds/utils/customHeaders';
+import { deserializeCustomHeaders } from '@/utils/customHeaders';
 import { isBlockedHost } from '@/utils/network';
+import { publicFetch } from '@/utils/publicFetch';
 
 // Cap redirect hops so the SSRF host check below can re-run on every one.
 const MAX_REDIRECTS = 5;
@@ -61,6 +62,7 @@ async function fetchFollowingRedirects(
   init: { method: 'GET' | 'HEAD'; headers: Headers; signal: AbortSignal },
 ): Promise<Response> {
   let currentUrl = startUrl;
+  let headers = new Headers(init.headers);
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const parsed = new URL(currentUrl);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
@@ -69,9 +71,21 @@ async function fetchFollowingRedirects(
     if (!isPrivateHostAllowed() && isBlockedHost(parsed.hostname)) {
       throw new SsrfBlockedError('This URL is not allowed');
     }
-    const response = await fetch(currentUrl, { ...init, redirect: 'manual' });
+    const response = isPrivateHostAllowed()
+      ? await fetch(currentUrl, { ...init, headers, redirect: 'manual' })
+      : await publicFetch(currentUrl, { ...init, headers });
     if (response.status >= 300 && response.status < 400 && response.headers.has('location')) {
-      currentUrl = new URL(response.headers.get('location')!, currentUrl).toString();
+      const nextUrl = new URL(response.headers.get('location')!, currentUrl);
+      if (nextUrl.origin !== parsed.origin) {
+        // Custom catalog headers can contain secrets too. Never restore them
+        // if a later redirect returns to the original origin.
+        headers = new Headers({
+          'User-Agent': READEST_OPDS_USER_AGENT,
+          Accept: 'application/atom+xml, application/xml, text/xml, application/json, */*',
+        });
+      }
+      await response.body?.cancel();
+      currentUrl = nextUrl.toString();
       continue;
     }
     return response;
@@ -96,9 +110,11 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
   );
   const encodedUrl = fullUrl.substring(urlParamStart, urlParamEnd);
   const url = decodeURIComponent(encodedUrl);
-  const auth = request.nextUrl.searchParams.get('auth');
+  // Clients send the catalog credential as a request header; older clients
+  // still put it in the `auth` query parameter.
+  const auth = request.headers.get('authorization') || request.nextUrl.searchParams.get('auth');
   const stream = request.nextUrl.searchParams.get('stream');
-  const customHeaders = deserializeOPDSCustomHeaders(request.nextUrl.searchParams.get('headers'));
+  const customHeaders = deserializeCustomHeaders(request.nextUrl.searchParams.get('headers'));
 
   if (!url) {
     return NextResponse.json(
@@ -150,6 +166,30 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
 
     clearTimeout(timeout);
 
+    // Headers that must NOT be forwarded as-is when we proxy the body:
+    //  - content-encoding: fetch() has already decoded gzip/br/deflate, so
+    //    the body the client receives is plain. Forwarding the original
+    //    Content-Encoding makes the browser try to decode it again, which
+    //    truncates or empties the response. This was the cause of
+    //    Content-Length: 0 / 0-byte downloads from Calibre and similar.
+    //  - content-length: must match the bytes we actually emit (post-decode).
+    //    We set the right value below where we know it.
+    //  - transfer-encoding / connection / keep-alive: hop-by-hop headers,
+    //    must not cross the proxy boundary.
+    const excludedHeaders = new Set([
+      'content-encoding',
+      'content-length',
+      'transfer-encoding',
+      'connection',
+      'keep-alive',
+    ]);
+
+    // Upstream headers for the error path, minus the ones the decoded body
+    // invalidates.
+    const upstreamHeaders = Object.fromEntries(
+      [...response.headers.entries()].filter(([key]) => !excludedHeaders.has(key.toLowerCase())),
+    );
+
     if (!response.ok) {
       console.error(`[OPDS Proxy] HTTP ${response.status} for ${url}`);
       if (method === 'HEAD') {
@@ -157,7 +197,7 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
           return new NextResponse(null, {
             status: 403,
             headers: {
-              ...Object.fromEntries(response.headers.entries()),
+              ...upstreamHeaders,
               'Cache-Control': 'no-store',
               'Access-Control-Allow-Origin': '*',
               'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
@@ -173,7 +213,7 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
         return new NextResponse(data, {
           status: 403,
           headers: {
-            ...Object.fromEntries(response.headers.entries()),
+            ...upstreamHeaders,
             'Cache-Control': 'no-store',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
@@ -184,7 +224,7 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
       return new NextResponse(data, {
         status: response.status,
         headers: {
-          ...Object.fromEntries(response.headers.entries()),
+          ...upstreamHeaders,
           'Cache-Control': 'no-store',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
@@ -206,24 +246,6 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
         `content-disposition=${upstreamContentDisposition ?? '(none)'}`,
     );
 
-    // Headers that must NOT be forwarded as-is when we proxy the body:
-    //  - content-encoding: fetch() has already decoded gzip/br/deflate, so
-    //    the body the client receives is plain. Forwarding the original
-    //    Content-Encoding makes the browser try to decode it again, which
-    //    truncates or empties the response. This was the cause of
-    //    Content-Length: 0 / 0-byte downloads from Calibre and similar.
-    //  - content-length: must match the bytes we actually emit (post-decode).
-    //    We set the right value below where we know it.
-    //  - transfer-encoding / connection / keep-alive: hop-by-hop headers,
-    //    must not cross the proxy boundary.
-    const excludedHeaders = new Set([
-      'content-encoding',
-      'content-length',
-      'transfer-encoding',
-      'connection',
-      'keep-alive',
-    ]);
-
     // Use a Headers object so name comparison is case-insensitive — this
     // prevents the `content-type` (lowercase from Headers.entries) and
     // `Content-Type` (title-case override) duplication that produced
@@ -241,7 +263,15 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
       const isFileDownload =
         stream === 'true' ||
         (upstreamContentDisposition ?? '').toLowerCase().includes('attachment');
-      h.set('Cache-Control', isFileDownload ? 'no-store' : 'public, max-age=300');
+      h.set(
+        'Cache-Control',
+        isFileDownload || auth || Object.keys(customHeaders).length
+          ? 'no-store'
+          : 'public, max-age=300',
+      );
+      // The catalog credential arrives in this header, so a cached guest feed
+      // must not answer a signed-in request for the same URL.
+      h.set('Vary', 'Authorization');
       h.set('Access-Control-Allow-Origin', '*');
       h.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
       h.set('Access-Control-Allow-Headers', 'Content-Type');
@@ -317,12 +347,48 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
   }
 }
 
+// Every upstream response, including errors and streamed downloads, is
+// untrusted data. It must never set cookies, execute code, or install workers
+// with the application's origin privileges.
+function isolateProxyResponse(response: NextResponse): NextResponse {
+  const allowedHeaders = new Set([
+    'content-type',
+    'content-length',
+    'content-disposition',
+    'content-range',
+    'accept-ranges',
+    'etag',
+    'last-modified',
+    'cache-control',
+    'vary',
+    'www-authenticate',
+    'x-content-length',
+    'access-control-allow-origin',
+    'access-control-allow-methods',
+    'access-control-allow-headers',
+    'access-control-expose-headers',
+  ]);
+  for (const key of [...response.headers.keys()]) {
+    if (!allowedHeaders.has(key)) response.headers.delete(key);
+  }
+  const mime = response.headers.get('Content-Type')?.split(';')[0]?.trim().toLowerCase() ?? '';
+  const safeMime =
+    /^(?:image\/(?:png|jpeg|gif|webp|avif|svg\+xml)|audio\/[a-z0-9.+-]+|video\/[a-z0-9.+-]+|text\/(?:plain|xml)|application\/(?:[a-z0-9.+-]+\+(?:xml|json)|xml|json|pdf|epub\+zip|zip|octet-stream))$/;
+  if (!safeMime.test(mime)) response.headers.set('Content-Type', 'application/octet-stream');
+  response.headers.set(
+    'Content-Security-Policy',
+    "sandbox; default-src 'none'; frame-ancestors 'none'",
+  );
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  return response;
+}
+
 export async function GET(request: NextRequest) {
-  return handleRequest(request, 'GET');
+  return isolateProxyResponse(await handleRequest(request, 'GET'));
 }
 
 export async function HEAD(request: NextRequest) {
-  return handleRequest(request, 'HEAD');
+  return isolateProxyResponse(await handleRequest(request, 'HEAD'));
 }
 
 export async function OPTIONS(_: NextRequest) {

@@ -11,6 +11,28 @@ export const getFilename = (fileOrUri: string) => {
   return lastPart.split('?')[0]!;
 };
 
+/**
+ * Duplicate marker a browser or download manager appends when a download would
+ * overwrite an existing file. Several of them put it after the extension
+ * (`The_Amazing_Traveling.epub (1)`), which is what AO3 re-downloads look like
+ * on Android (issue #5959).
+ */
+const DUPLICATE_MARKER = /[\s_-]*\(\d+\)$/;
+
+export const stripDuplicateMarker = (filename: string) => filename.replace(DUPLICATE_MARKER, '');
+
+/**
+ * Lowercased extension of `filename` without the leading dot, or '' when it has
+ * none. Looks past a trailing duplicate marker, so `book.epub (1)` is still an
+ * `epub` — a plain `split('.').pop()` reads that as `epub (1)` and every
+ * extension whitelist then rejects the file.
+ */
+export const getFileExtension = (filename: string) => {
+  const name = stripDuplicateMarker(getFilename(filename));
+  const dotIndex = name.lastIndexOf('.');
+  return dotIndex < 0 ? '' : name.slice(dotIndex + 1).toLowerCase();
+};
+
 export const getBaseFilename = (filename: string) => {
   const normalizedPath = filename.replace(/\\/g, '/');
   const name = normalizedPath.split('/').pop() || '';
@@ -44,4 +66,17 @@ export const getFolderImportGroupName = (filePath: string, basePath: string) => 
 
 export const joinPaths = async (...paths: string[]) => {
   return await join(...paths);
+};
+
+/**
+ * Join a folder root with a relative path returned by a directory scan, using
+ * the root's own separator style. Equivalent to {@link joinPaths} for these
+ * inputs (native-form root from the folder picker, host-separator relative
+ * path from the scan) but pure string work — no IPC round-trip. That matters
+ * when the watched-folder scan joins hundreds of paths on every window focus
+ * (issue #5494).
+ */
+export const joinScannedPath = (root: string, relativePath: string) => {
+  const sep = root.includes('\\') ? '\\' : '/';
+  return root.replace(/[\\/]+$/, '') + sep + relativePath;
 };

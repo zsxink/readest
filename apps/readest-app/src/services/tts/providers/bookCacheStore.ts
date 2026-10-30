@@ -21,6 +21,7 @@ import { SqliteTTSCacheStore, TTSPackFs } from './sqliteCacheStore';
 const CONFIG_KEY = 'readest-tts-cache';
 const DEFAULT_BUDGET_MB = 200;
 const COMPACT_DEBOUNCE_MS = 30_000;
+const DOWNLOADS_MARKER = 'downloads.json';
 
 export interface TTSCacheConfig {
   enabled: boolean;
@@ -87,6 +88,16 @@ const createNativePackFs = (dir: string): TTSPackFs => ({
       await file.close();
     }
   },
+  async readSidecar(name) {
+    try {
+      const { readTextFile, BaseDirectory } = await import('@tauri-apps/plugin-fs');
+      const text = await readTextFile(`${dir}/${name}`, { baseDir: BaseDirectory.AppCache });
+      const parsed = JSON.parse(text);
+      return parsed && Array.isArray(parsed.entries) ? parsed : null;
+    } catch {
+      return null;
+    }
+  },
   async remove(name) {
     const { remove, BaseDirectory } = await import('@tauri-apps/plugin-fs');
     await remove(`${dir}/${name}`, { baseDir: BaseDirectory.AppCache });
@@ -98,6 +109,19 @@ const createNativePackFs = (dir: string): TTSPackFs => ({
   },
 });
 
+// The per-book store every synthetic engine of one reader shares: each opens
+// the same `cache.db`, and OPFS sync access handles are exclusive, so two
+// stores on one book would fight. Entries are namespaced by provider id.
+// Null when there is no app context or the user turned the cache off.
+export const createBookTTSCacheStore = (
+  appService: AppService | null | undefined,
+  getBookHash: () => string | null,
+): BookTTSCacheStore | null => {
+  const cacheConfig = getTTSCacheConfig();
+  if (!appService || !cacheConfig.enabled) return null;
+  return new BookTTSCacheStore(appService, getBookHash, cacheConfig.budgetMB * 1024 * 1024);
+};
+
 export class BookTTSCacheStore implements TTSCacheStore {
   #appService: AppService;
   // The book key lands on the controller after construction (init()), so the
@@ -105,7 +129,9 @@ export class BookTTSCacheStore implements TTSCacheStore {
   #getBookHash: () => string | null;
   #budgetBytes: number;
   #opening: Promise<{ db: DatabaseService; store: SqliteTTSCacheStore } | null> | null = null;
+  #closing: Promise<void> | null = null;
   #compactTimer: ReturnType<typeof setTimeout> | null = null;
+  readonly #importListeners = new Set<(keys: string[]) => void>();
 
   constructor(appService: AppService, getBookHash: () => string | null, budgetBytes: number) {
     this.#appService = appService;
@@ -114,6 +140,7 @@ export class BookTTSCacheStore implements TTSCacheStore {
   }
 
   #open() {
+    if (this.#closing) return this.#closing.then(() => null);
     if (this.#opening) return this.#opening;
     const bookHash = this.#getBookHash();
     if (!bookHash) {
@@ -138,6 +165,14 @@ export class BookTTSCacheStore implements TTSCacheStore {
         // 'tts-cache' has no registered migrations; the store owns its DDL.
         const db = await this.#appService.openDatabase('tts-cache', `${dir}/cache.db`, 'Cache');
         const store = new SqliteTTSCacheStore(db, { budgetBytes: this.#budgetBytes, packFs });
+        // Before the pull below, so its imports reach the listeners.
+        store.onImported((keys) => {
+          for (const listener of this.#importListeners) listener(keys);
+        });
+        // Reconcile the durable marker before a cross-book sweep. A crash can
+        // occur between pinning SQLite rows and writing the marker; the next
+        // open repairs that gap before eviction is allowed to inspect it.
+        await this.#syncDownloadMarker(bookHash, store);
         // Sweep tmp files from crashed compactions and packs whose rows were
         // evicted before the file delete landed. Concurrent-safe: only files
         // unknown to the database are touched.
@@ -159,9 +194,22 @@ export class BookTTSCacheStore implements TTSCacheStore {
     return this.#opening;
   }
 
+  onImported(listener: (keys: string[]) => void): void {
+    this.#importListeners.add(listener);
+  }
+
+  async open(): Promise<void> {
+    await this.#open();
+  }
+
   async get(key: string): Promise<TTSCacheEntry | null> {
     const opened = await this.#open();
     return opened ? opened.store.get(key) : null;
+  }
+
+  async cachedKeys(keys: string[]): Promise<Set<string>> {
+    const opened = await this.#open();
+    return opened ? opened.store.cachedKeys(keys) : new Set();
   }
 
   async put(
@@ -185,6 +233,56 @@ export class BookTTSCacheStore implements TTSCacheStore {
     await opened?.store.recordMarkKey(section, ordinal, key);
   }
 
+  async recordMarkKeys(section: number, marks: { ordinal: number; key: string }[]): Promise<void> {
+    const opened = await this.#open();
+    await opened?.store.recordMarkKeys(section, marks);
+  }
+
+  async beginDownloadSections(sections: number[]): Promise<void> {
+    const opened = await this.#open();
+    if (!opened) return;
+    const bookHash = this.#getBookHash();
+    if (!bookHash) return;
+    // Write the eviction guard first. A crash may leave a harmless stale
+    // marker, but must never leave pinned SQLite rows exposed to another
+    // book's concurrent cross-cache sweep.
+    await this.#appService.writeFile(
+      `tts-cache/${bookHash}/${DOWNLOADS_MARKER}`,
+      'Cache',
+      JSON.stringify({ pinned: true }),
+    );
+    try {
+      await opened.store.beginDownloadSections(sections);
+    } catch (err) {
+      await this.#syncDownloadMarker(bookHash, opened.store);
+      throw err;
+    }
+  }
+
+  async completeDownloadSections(sections: number[]): Promise<void> {
+    const opened = await this.#open();
+    if (!opened) return;
+    await opened.store.completeDownloadSections(sections);
+    const bookHash = this.#getBookHash();
+    if (bookHash) await this.#syncDownloadMarker(bookHash, opened.store);
+  }
+
+  async cancelDownloadSections(sections: number[]): Promise<void> {
+    const opened = await this.#open();
+    if (!opened) return;
+    await opened.store.cancelDownloadSections(sections);
+    const bookHash = this.#getBookHash();
+    if (bookHash) await this.#syncDownloadMarker(bookHash, opened.store);
+  }
+
+  async clearDownloads(): Promise<void> {
+    const opened = await this.#open();
+    if (!opened) return;
+    await opened.store.clearDownloads();
+    const bookHash = this.#getBookHash();
+    if (bookHash) await this.#syncDownloadMarker(bookHash, opened.store);
+  }
+
   // Immediate compaction for downloads (bypasses the debounced timer), then a
   // push if any packs were created and sync is on.
   async compact(): Promise<void> {
@@ -196,7 +294,10 @@ export class BookTTSCacheStore implements TTSCacheStore {
   }
 
   async getSectionStatuses(): Promise<
-    Map<number, { total: number; recorded: number; packed: boolean }>
+    Map<
+      number,
+      { total: number; recorded: number; packed: boolean; pinned: boolean; active: boolean }
+    >
   > {
     const opened = await this.#open();
     return opened ? opened.store.getSectionStatuses() : new Map();
@@ -210,6 +311,20 @@ export class BookTTSCacheStore implements TTSCacheStore {
   async totalCacheBytes(): Promise<number> {
     const opened = await this.#open();
     return opened ? opened.store.totalCacheBytes() : 0;
+  }
+
+  async #syncDownloadMarker(bookHash: string, store: SqliteTTSCacheStore): Promise<void> {
+    const path = `tts-cache/${bookHash}/${DOWNLOADS_MARKER}`;
+    try {
+      if (await store.hasDownloads()) {
+        await this.#appService.writeFile(path, 'Cache', JSON.stringify({ pinned: true }));
+      } else {
+        await this.#appService.deleteFile(path, 'Cache');
+      }
+    } catch {
+      // Marker repair is best-effort. SQLite remains authoritative and the
+      // next store open will retry before launching the sweep.
+    }
   }
 
   // Compaction is idle work: debounce it behind manifest updates so it never
@@ -256,7 +371,12 @@ export class BookTTSCacheStore implements TTSCacheStore {
     });
   }
 
-  async close(): Promise<void> {
+  close(): Promise<void> {
+    if (!this.#closing) this.#closing = this.#close();
+    return this.#closing;
+  }
+
+  async #close(): Promise<void> {
     if (this.#compactTimer) {
       clearTimeout(this.#compactTimer);
       this.#compactTimer = null;
@@ -281,3 +401,36 @@ export class BookTTSCacheStore implements TTSCacheStore {
     }
   }
 }
+
+// Delete pinned offline audio when a book leaves the local library, including
+// deletion paths that run without a live reader/controller (sync and purge).
+// Open the existing database directly so cleanup does not trigger normal
+// cache-open side effects such as pack sync or a cross-book sweep.
+export const clearBookTTSDownloads = async (
+  appService: AppService,
+  bookHash: string,
+): Promise<void> => {
+  const dir = `tts-cache/${bookHash}`;
+  const dbPath = `${dir}/cache.db`;
+  if (!(await appService.databaseExists(dbPath, 'Cache'))) {
+    await appService.deleteFile(`${dir}/${DOWNLOADS_MARKER}`, 'Cache').catch(() => {});
+    return;
+  }
+
+  let packFs: TTSPackFs | undefined;
+  if (isTauriAppPlatform()) {
+    packFs = createNativePackFs(`${dir}/packs`);
+  } else {
+    packFs = await createOpfsPackFs(`${dir}/packs`);
+  }
+  const db = await appService.openDatabase('tts-cache', dbPath, 'Cache');
+  const budgetBytes = Math.max(1, getTTSCacheConfig().budgetMB * 1024 * 1024);
+  const store = new SqliteTTSCacheStore(db, { budgetBytes, packFs });
+  try {
+    await store.clearDownloads();
+    await store.flush();
+  } finally {
+    await db.close();
+  }
+  await appService.deleteFile(`${dir}/${DOWNLOADS_MARKER}`, 'Cache').catch(() => {});
+};

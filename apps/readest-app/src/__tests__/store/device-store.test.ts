@@ -186,7 +186,14 @@ describe('deviceStore', () => {
       vi.mocked(setScreenBrightness).mockResolvedValue({ success: true });
 
       await useDeviceControlStore.getState().setScreenBrightness(0.5);
-      expect(setScreenBrightness).toHaveBeenCalledWith({ brightness: 0.5 });
+      expect(setScreenBrightness).toHaveBeenCalledWith({ brightness: 0.5, persist: false });
+    });
+
+    test('asks the bridge to write through to the system when persisting', async () => {
+      const { setScreenBrightness } = await import('@/utils/bridge');
+      vi.mocked(setScreenBrightness).mockResolvedValue({ success: true });
+      await useDeviceControlStore.getState().setScreenBrightness(0.5, true);
+      expect(setScreenBrightness).toHaveBeenCalledWith({ brightness: 0.5, persist: true });
     });
   });
 
@@ -311,6 +318,17 @@ describe('deviceStore', () => {
         keyName: 'Back',
         keyCode: 4,
       });
+    });
+  });
+
+  // ── Pencil gesture forwarding (#5501) ──────────────────────────
+  describe('ensureKeyForwarding', () => {
+    test('installs the native key handler without touching interception', async () => {
+      const { interceptKeys } = await import('@/utils/bridge');
+      useDeviceControlStore.getState().ensureKeyForwarding();
+
+      expect(window.onNativeKeyDown).toBeDefined();
+      expect(interceptKeys).not.toHaveBeenCalled();
     });
   });
 });

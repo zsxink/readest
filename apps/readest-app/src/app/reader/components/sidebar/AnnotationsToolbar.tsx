@@ -15,7 +15,7 @@ import {
 } from '../../utils/annotatorUtil';
 import Dropdown from '@/components/Dropdown';
 
-const FILTER_KINDS: AnnotationFilterKind[] = ['all', 'highlights', 'notes'];
+const FILTER_KINDS: AnnotationFilterKind[] = ['all', 'notes'];
 
 interface AnnotationsFilterPanelProps {
   filterKind: AnnotationFilterKind;
@@ -50,8 +50,7 @@ const AnnotationsFilterPanel: React.FC<AnnotationsFilterPanelProps> = ({
 
   const filterLabels: Record<AnnotationFilterKind, string> = {
     all: _('All'),
-    highlights: _('Highlights'),
-    notes: _('Notes'),
+    notes: _('With notes'),
   };
 
   const showColors = colors.length >= 2;
@@ -176,6 +175,9 @@ interface AnnotationsToolbarProps {
   filterKind: AnnotationFilterKind;
   searchInput: string;
   isSearchVisible: boolean;
+  annotationCount: number;
+  matchCount: number;
+  isFiltering: boolean;
   colors: HighlightColor[];
   styles: HighlightStyle[];
   excludedColors: HighlightColor[];
@@ -192,6 +194,9 @@ const AnnotationsToolbar: React.FC<AnnotationsToolbarProps> = ({
   filterKind,
   searchInput,
   isSearchVisible,
+  annotationCount,
+  matchCount,
+  isFiltering,
   colors,
   styles,
   excludedColors,
@@ -217,8 +222,27 @@ const AnnotationsToolbar: React.FC<AnnotationsToolbarProps> = ({
   const hasActiveFilters =
     filterKind !== 'all' || excludedColors.length > 0 || excludedStyles.length > 0;
 
+  // The search field takes the whole row when it is open, so the summary only
+  // speaks while it is closed: the book's annotation total at rest, and how
+  // much of it survives the filters once any are on.
+  const total = annotationCount;
+  const summary = isFiltering
+    ? _('{{matched}} of {{total}}', { matched: matchCount, total })
+    : _('{{count}} Annotations', { count: annotationCount });
+
   return (
+    // justify-end, not justify-between: with no annotations yet the filter
+    // button is the only child and must still sit at the trailing edge.
     <div className='annotations-toolbar flex items-center justify-end gap-2 ps-3 pe-3 pb-2 pt-2'>
+      {!isSearchVisible && total > 0 && (
+        <div
+          data-testid='annotations-summary'
+          aria-live='polite'
+          className='text-base-content/60 flex h-8 min-w-0 flex-1 items-center truncate text-xs tabular-nums'
+        >
+          {summary}
+        </div>
+      )}
       {isSearchVisible && (
         <div className='eink-bordered bg-base-100 flex h-8 min-w-0 flex-1 items-center rounded-lg'>
           <div className='ps-3'>
@@ -235,7 +259,7 @@ const AnnotationsToolbar: React.FC<AnnotationsToolbarProps> = ({
               if (e.key === 'Escape') onCloseSearch();
             }}
             placeholder={_('Search annotations...')}
-            className='w-full min-w-0 bg-transparent p-2 font-sans text-sm font-light focus:outline-none'
+            className='w-full min-w-0 bg-transparent p-2 font-sans text-sm font-light focus:outline-hidden'
           />
           <button
             onClick={onCloseSearch}

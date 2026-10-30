@@ -18,6 +18,7 @@ import { ClosableFile } from '@/utils/file';
 import { ProgressHandler } from '@/utils/transfer';
 import { CLOUD_BOOKS_SUBDIR, CLOUD_REPLICAS_SUBDIR } from './constants';
 import { isBookFileContentSource, resolveBookContentSource } from './bookContent';
+import { getAbsOfflineDir } from '@/utils/audiobook';
 
 export async function deleteBook(
   fs: FileSystem,
@@ -58,6 +59,16 @@ export async function deleteBook(
         await fs.removeDir(ttsCacheDir, 'Cache', true);
       }
     }
+
+    // An offline Audiobookshelf download keeps its tracks beside the book
+    // (#6256); purge already wiped the whole directory above.
+    if (book.format === 'ABS' && deleteAction !== 'purge') {
+      const offlineDir = getAbsOfflineDir(book.hash);
+      if (await fs.exists(offlineDir, 'Books')) {
+        await fs.removeDir(offlineDir, 'Books', true);
+      }
+    }
+    book.absDownloadedAt = null;
 
     if (deleteAction === 'both' && (await fs.exists(getCoverFilename(book), 'Books'))) {
       await fs.removeFile(getCoverFilename(book), 'Books');
@@ -221,6 +232,7 @@ export async function uploadBook(
   completedFiles.count++;
 
   book.deletedAt = null;
+  book.fileSyncDeletionRequestedAt = null;
   book.updatedAt = Date.now();
   book.uploadedAt = Date.now();
   book.downloadedAt = Date.now();
@@ -294,6 +306,10 @@ export async function downloadBookCovers(
         }
       } catch (error) {
         console.log(`Failed to download cover file for book: '${file.lfp}'`, error);
+        // The sync still adopts the new cover hash, so mark the cover as not
+        // downloaded or it is never fetched again (#6816).
+        const book = booksLfps.get(file.lfp);
+        if (book) book.coverDownloadedAt = null;
       }
     }),
   );

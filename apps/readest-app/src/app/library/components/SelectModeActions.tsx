@@ -7,6 +7,9 @@ import {
   MdInfoOutline,
   MdCheckCircleOutline,
   MdOutlineCloudDownload,
+  MdWifiTethering,
+  MdLabelOutline,
+  MdOutlineArchive,
 } from 'react-icons/md';
 import { IoShareSocialOutline } from 'react-icons/io5';
 import { LuFolderPlus } from 'react-icons/lu';
@@ -28,6 +31,7 @@ interface SelectModeActionsProps {
   canDownload?: boolean;
   onOpen: () => void;
   onGroup: () => void;
+  onTag: () => void;
   onDetails: () => void;
   onStatus: () => void;
   // Queues every cloud-only book in the selection, groups included (#5244).
@@ -37,6 +41,12 @@ interface SelectModeActionsProps {
   // button — the user's visual focus is on the cover they just tapped.
   // On iOS / Android the share sheet is modal and ignores position.
   onSend: () => void;
+  // Hidden unless the LocalSend integration is enabled on this device.
+  // Sends the selected books to a nearby LocalSend peer; unlike onSend it
+  // works on every Tauri platform (no OS share sheet involved).
+  sendNearbyEnabled?: boolean;
+  onSendNearby?: () => void;
+  onPack?: () => void;
   onDelete: () => void;
   onCancel: () => void;
   // Reports the popup's rendered height (including its safe-area padding) so the
@@ -52,10 +62,14 @@ const SelectModeActions: React.FC<SelectModeActionsProps> = ({
   canDownload = false,
   onOpen,
   onGroup,
+  onTag,
   onDetails,
   onStatus,
   onDownload,
   onSend,
+  sendNearbyEnabled = false,
+  onSendNearby,
+  onPack,
   onDelete,
   onCancel,
   onHeightChange,
@@ -98,7 +112,7 @@ const SelectModeActions: React.FC<SelectModeActionsProps> = ({
           'text-base-content text-xs shadow-lg',
           'not-eink:bg-base-300 eink:bg-base-100 eink:border eink:border-base-content',
           'mx-auto w-fit max-w-[calc(100vw-1rem)] rounded-lg p-4',
-          'flex items-center justify-center gap-x-6',
+          'flex flex-wrap items-center justify-center gap-x-6 gap-y-3',
           'max-[500px]:grid max-[500px]:grid-cols-4 max-[500px]:gap-x-6 max-[500px]:gap-y-3',
         )}
       >
@@ -121,6 +135,17 @@ const SelectModeActions: React.FC<SelectModeActionsProps> = ({
         >
           <LuFolderPlus />
           <div>{_('Group')}</div>
+        </button>
+        <button
+          onClick={onTag}
+          disabled={!hasSelection}
+          className={clsx(
+            'flex flex-col items-center justify-center gap-1',
+            !hasSelection && 'btn-disabled opacity-50',
+          )}
+        >
+          <MdLabelOutline />
+          <div>{_('Tag')}</div>
         </button>
         <button
           onClick={onStatus}
@@ -146,9 +171,6 @@ const SelectModeActions: React.FC<SelectModeActionsProps> = ({
           onClick={onDownload}
           className={clsx(
             'flex flex-col items-center justify-center gap-1',
-            // Heads the second row on narrow viewports; everything after it
-            // (Send / Delete / Cancel) then flows behind it.
-            'max-[500px]:col-start-1',
             !canDownload && 'btn-disabled opacity-50',
           )}
         >
@@ -165,6 +187,30 @@ const SelectModeActions: React.FC<SelectModeActionsProps> = ({
           >
             <IoShareSocialOutline />
             <div>{_('Send')}</div>
+          </button>
+        )}
+        {sendNearbyEnabled && (
+          <button
+            onClick={onSendNearby}
+            className={clsx(
+              'flex flex-col items-center justify-center gap-1',
+              (!hasSelection || !hasValidBooks) && 'btn-disabled opacity-50',
+            )}
+          >
+            <MdWifiTethering />
+            <div>{_('Nearby')}</div>
+          </button>
+        )}
+        {onPack && (
+          <button
+            onClick={onPack}
+            className={clsx(
+              'flex flex-col items-center justify-center gap-1',
+              (!hasSelection || !hasValidBooks) && 'btn-disabled opacity-50',
+            )}
+          >
+            <MdOutlineArchive />
+            <div>{_('Pack')}</div>
           </button>
         )}
         <button

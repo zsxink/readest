@@ -168,14 +168,45 @@ describe('makeMarkdownBook', () => {
     expect(doc.querySelector('h1')?.getAttribute('id')).toBeTruthy();
   });
 
-  it('resolves the title from frontmatter, then first H1, then filename', async () => {
+  it('renders $$ display and $ inline math as MathML (issue #6870)', async () => {
+    const book = await make(
+      '是 $\\sqrt{12}$ 倍（记为 $N_T$）。然后有：\n\n$$\n\\text{年化} = \\sqrt{N_T} \\times x\n$$\n',
+    );
+    const doc = await book.sections[0]!.createDocument();
+    expect(doc.querySelector('parsererror')).toBeNull();
+    const maths = [...doc.getElementsByTagNameNS('http://www.w3.org/1998/Math/MathML', 'math')];
+    expect(maths.map((m) => m.getAttribute('display'))).toEqual([null, null, 'block']);
+    expect(doc.body.textContent).not.toContain('$');
+  });
+
+  it('strips script and event handlers inside math', async () => {
+    const book = await make(
+      '$x$ <math><mi onclick="alert(1)">y</mi><script>alert(1)</script></math>\n',
+    );
+    const doc = await book.sections[0]!.createDocument();
+    expect(doc.querySelector('script')).toBeNull();
+    expect(doc.querySelector('[onclick]')).toBeNull();
+  });
+
+  it('resolves the title from frontmatter, then the filename', async () => {
     const fm = await make('---\ntitle: From Front\nauthor: Jane Doe\n---\n\n# Ignored\n');
     expect(fm.metadata.title).toBe('From Front');
     expect(fm.metadata.author).toBe('Jane Doe');
-    const h1 = await make('# The Heading\n\nbody\n');
-    expect(h1.metadata.title).toBe('The Heading');
     const fn = await make('just text\n', 'My Notes.md');
     expect(fn.metadata.title).toBe('My Notes');
+  });
+
+  // A heading is body content, not metadata: only frontmatter — an explicit
+  // metadata block — may override the name the user gave the file. Taking the
+  // first H1 instead made `demo.md` import as "按顺序总结", and every note whose
+  // first line is a heading landed in the library under that heading.
+  it('titles the book after the file, not the first heading', async () => {
+    const h1 = await make('# The Heading\n\nbody\n', 'demo.md');
+    expect(h1.metadata.title).toBe('demo');
+    // The H1 is picked by tag name, not position, so a later one hijacked the
+    // title even when the document opened with an H2.
+    const laterH1 = await make('## Intro\n\n# Buried Heading\n\nbody\n', 'Reading Notes.markdown');
+    expect(laterH1.metadata.title).toBe('Reading Notes');
   });
 
   // Issue #5279: the two frontmatter shapes the reporter attached, each pairing
@@ -245,6 +276,26 @@ describe('makeMarkdownBook', () => {
     expect(book.metadata.language).toBe('en');
     expect(book.metadata.author).toBe('');
     expect(await book.getCover()).toBeNull();
+  });
+
+  it('detects the language of the text when the frontmatter names none', async () => {
+    const book = await make(
+      '# Rozdział pierwszy\n\n' +
+        'Był piękny letni dzień, kiedy po raz pierwszy zobaczyłem morze. ' +
+        'Szliśmy razem przez las, a potem długo siedzieliśmy na plaży i rozmawialiśmy ' +
+        'o wszystkim, co wydarzyło się w ciągu ostatnich lat w naszym małym mieście.\n',
+      'Opowiadanie.md',
+    );
+    expect(book.metadata.language).toBe('pl');
+  });
+
+  it('keeps the frontmatter language over the detected one', async () => {
+    const book = await make(
+      '---\nlanguage: fr\n---\n\n' +
+        'Był piękny letni dzień, kiedy po raz pierwszy zobaczyłem morze. ' +
+        'Szliśmy razem przez las, a potem długo siedzieliśmy na plaży.\n',
+    );
+    expect(book.metadata.language).toBe('fr');
   });
 
   it('creates object URLs lazily and revokes every one on destroy', async () => {

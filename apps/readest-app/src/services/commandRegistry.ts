@@ -186,33 +186,33 @@ const fontPanelItems = [
   },
   {
     id: 'settings.font.defaultFont',
-    labelKey: _('Default Font'),
+    labelKey: _('Font Category'),
     keywords: ['font', 'family', 'serif', 'sans', 'default'],
-    section: 'Font Family',
+    section: 'Preferred Font',
   },
   {
     id: 'settings.font.cjkFont',
     labelKey: _('CJK Font'),
     keywords: ['font', 'cjk', 'chinese', 'japanese', 'korean', 'asian'],
-    section: 'Font Family',
+    section: 'CJK Font',
   },
   {
     id: 'settings.font.serifFont',
     labelKey: _('Serif Font'),
     keywords: ['font', 'serif', 'family', 'typeface'],
-    section: 'Font Face',
+    section: 'Preferred Font',
   },
   {
     id: 'settings.font.sansSerifFont',
     labelKey: _('Sans-Serif Font'),
     keywords: ['font', 'sans', 'serif', 'family', 'typeface'],
-    section: 'Font Face',
+    section: 'Preferred Font',
   },
   {
     id: 'settings.font.monospaceFont',
     labelKey: _('Monospace Font'),
     keywords: ['font', 'monospace', 'mono', 'code', 'fixed', 'width'],
-    section: 'Font Face',
+    section: 'Preferred Font',
   },
 ];
 
@@ -297,6 +297,12 @@ const layoutPanelItems = [
     section: 'Page',
   },
   {
+    id: 'settings.layout.columnGap',
+    labelKey: _('Column Gap (px)'),
+    keywords: ['column', 'gap', 'gutter', 'spine', 'spread', 'two', 'dual'],
+    section: 'Page',
+  },
+  {
     id: 'settings.layout.maxColumnCount',
     labelKey: _('Maximum Number of Columns'),
     keywords: ['column', 'columns', 'max', 'count', 'multi'],
@@ -330,6 +336,28 @@ const layoutPanelItems = [
     id: 'settings.layout.progressDisplay',
     labelKey: _('Reading Progress Style'),
     keywords: ['progress', 'display', 'page', 'number', 'percentage'],
+    section: 'Header & Footer',
+  },
+  {
+    id: 'settings.layout.headerFooterFontSize',
+    labelKey: _('Font Size'),
+    keywords: ['font', 'size', 'header', 'footer', 'progress', 'page', 'number', 'text'],
+    section: 'Header & Footer',
+  },
+  {
+    id: 'settings.layout.headerFooterBackground',
+    labelKey: _('Background Color'),
+    keywords: [
+      'background',
+      'color',
+      'transparent',
+      'text',
+      'header',
+      'footer',
+      'progress',
+      'page',
+      'number',
+    ],
     section: 'Header & Footer',
   },
 ];
@@ -385,6 +413,12 @@ const colorPanelItems = [
     section: 'TTS',
   },
   {
+    id: 'settings.tts.customServices',
+    labelKey: _('Custom TTS Services'),
+    keywords: ['tts', 'custom', 'voice', 'api key', 'openai', 'kokoro', 'speech', 'byok'],
+    section: 'TTS',
+  },
+  {
     id: 'settings.tts.playerStyle',
     labelKey: _('TTS Player Style'),
     keywords: ['tts', 'player', 'mini', 'style', 'cover', 'full', 'minimal'],
@@ -401,6 +435,12 @@ const colorPanelItems = [
     labelKey: _('Code Highlighting'),
     keywords: ['code', 'highlighting', 'syntax', 'programming'],
     section: 'Code',
+  },
+  {
+    id: 'settings.color.dialogueHighlight',
+    labelKey: _('Dialogue Highlighting'),
+    keywords: ['dialogue', 'dialog', 'speech', 'quote', 'highlight', 'theme'],
+    section: 'Theme',
   },
 ];
 
@@ -455,6 +495,27 @@ const controlPanelItems = [
     section: 'Pagination',
   },
   {
+    id: 'settings.control.stablePageNumbers',
+    labelKey: _('Stable Page Numbers'),
+    keywords: [
+      'stable',
+      'page',
+      'number',
+      'count',
+      'screen',
+      'calibrate',
+      'measured',
+      'pagination',
+    ],
+    section: 'Pagination',
+  },
+  {
+    id: 'settings.control.disablePullDownToBookmark',
+    labelKey: _('Pull-Down to Bookmark'),
+    keywords: ['pull', 'down', 'bookmark', 'gesture'],
+    section: 'Annotation Tools',
+  },
+  {
     id: 'settings.control.enableQuickActions',
     labelKey: _('Enable Quick Actions'),
     keywords: ['quick', 'actions', 'annotation', 'enable'],
@@ -491,6 +552,18 @@ const controlPanelItems = [
     section: 'Device',
   },
   {
+    id: 'settings.control.autoFullRefresh',
+    labelKey: _('Auto Full Refresh'),
+    keywords: ['eink', 'e-ink', 'ghosting', 'full', 'refresh', 'interval', 'pages'],
+    section: 'Device',
+  },
+  {
+    id: 'settings.control.hideBookshelfPageButtons',
+    labelKey: _('Hide Bookshelf Buttons'),
+    keywords: ['eink', 'e-ink', 'library', 'bookshelf', 'previous', 'next', 'page', 'buttons'],
+    section: 'Device',
+  },
+  {
     id: 'settings.control.screenWakeLock',
     labelKey: _('Keep Screen Awake'),
     keywords: ['screen', 'wake', 'lock', 'awake', 'sleep', 'display'],
@@ -500,6 +573,18 @@ const controlPanelItems = [
     id: 'settings.control.autohideCursor',
     labelKey: _('Auto-hide Cursor'),
     keywords: ['cursor', 'mouse', 'pointer', 'hide', 'autohide', 'idle'],
+    section: 'Device',
+  },
+  {
+    id: 'settings.control.reverseWheelPaging',
+    labelKey: _('Reverse Mouse Wheel'),
+    keywords: ['mouse', 'wheel', 'scroll', 'reverse', 'invert', 'direction', 'page'],
+    section: 'Device',
+  },
+  {
+    id: 'settings.control.gamepadEnabled',
+    labelKey: _('Gamepad Support'),
+    keywords: ['gamepad', 'controller', 'joystick', 'steam', 'deck', 'joypad'],
     section: 'Device',
   },
   {
@@ -528,6 +613,18 @@ const languagePanelItems = [
     id: 'settings.language.translationProvider',
     labelKey: _('Translation Service'),
     keywords: ['translation', 'provider', 'google', 'deepl', 'service'],
+    section: 'Translation',
+  },
+  {
+    id: 'settings.language.translationPrompt',
+    labelKey: _('Translation Prompt'),
+    keywords: ['translation', 'prompt', 'ai', 'llm', 'style'],
+    section: 'Translation',
+  },
+  {
+    id: 'settings.language.customTranslators',
+    labelKey: _('Custom Translators'),
+    keywords: ['translation', 'custom', 'api key', 'openai', 'deepseek', 'ollama', 'deepl', 'llm'],
     section: 'Translation',
   },
   {
