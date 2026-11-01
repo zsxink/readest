@@ -1880,8 +1880,6 @@
   "Audio Cache": "Audiocache",
   "Cache Synthesized Audio": "Gesynthetiseerde audio cachen",
   "Reuse generated speech across sessions without refetching": "Gegenereerde spraak hergebruiken tussen sessies zonder opnieuw op te halen",
-  "Sync Audio Cache": "Audiocache synchroniseren",
-  "Share section audio between your devices through your file sync service": "Sectie-audio delen tussen je apparaten via je bestandssynchronisatiedienst",
   "Storage Limit": "Opslaglimiet",
   "Playback settings": "Afspeelinstellingen",
   "Player Style": "Spelerstijl",
@@ -2324,7 +2322,6 @@
   "{{seconds}}s": "{{seconds}} s",
   "Could not read the length of every track in this audiobook": "Kan de lengte van elk fragment van dit luisterboek niet lezen",
   "Manage the streamed audiobook paired with this ebook.": "Beheer het gestreamde luisterboek dat aan dit e-boek is gekoppeld.",
-  "Dismiss": "Sluiten",
   "Failed to upload the library index. Please sync again.": "De bibliotheekindex kon niet worden geüpload. Synchroniseer opnieuw.",
   "Search results": "Zoekresultaten",
   "Filter group": "Filtergroep",
@@ -2655,5 +2652,15 @@
   "Quotes take the highlight color, and > [!NOTE] becomes a callout": "Citaten krijgen de markeringskleur en > [!NOTE] wordt een callout",
   "Variables: {{variables}}": "Variabelen: {{variables}}",
   "Stable Page Numbers": "Vaste paginanummers",
-  "Turn off to count pages by the screens of this device": "Zet uit om pagina's te tellen per scherm van dit apparaat"
+  "Turn off to count pages by the screens of this device": "Zet uit om pagina's te tellen per scherm van dit apparaat",
+  "Page Flip": "Pagina omdraaien",
+  "{{count}} pages_one": "{{count}} pagina",
+  "{{count}} pages_other": "{{count}} pagina’s",
+  "Show page count": "Aantal pagina’s tonen",
+  "One page": "Eén pagina",
+  "Two pages": "Twee pagina's",
+  "Show One Page": "Eén pagina tonen",
+  "Show Two Pages": "Twee pagina's tonen",
+  "Book Data": "Boekgegevens",
+  "Downloaded read-aloud audio and translations": "Gedownloade voorleesaudio en vertalingen"
 }

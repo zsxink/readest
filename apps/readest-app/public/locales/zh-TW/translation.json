@@ -1859,8 +1859,6 @@
   "Audio Cache": "音訊快取",
   "Cache Synthesized Audio": "快取合成語音",
   "Reuse generated speech across sessions without refetching": "跨工作階段重複使用已產生的語音，無需重新取得",
-  "Sync Audio Cache": "同步音訊快取",
-  "Share section audio between your devices through your file sync service": "透過您的檔案同步服務在裝置間共享章節音訊",
   "Storage Limit": "儲存空間上限",
   "Playback settings": "播放設定",
   "Player Style": "播放器樣式",
@@ -2264,7 +2262,6 @@
   "{{seconds}}s": "{{seconds}} 秒",
   "Could not read the length of every track in this audiobook": "無法讀取這本有聲書中每個音軌的長度",
   "Manage the streamed audiobook paired with this ebook.": "管理與此電子書配對的串流有聲書。",
-  "Dismiss": "關閉",
   "Failed to upload the library index. Please sync again.": "書庫索引上傳失敗。請重新同步。",
   "Search results": "搜尋結果",
   "Filter group": "篩選群組",
@@ -2587,5 +2584,14 @@
   "Quotes take the highlight color, and > [!NOTE] becomes a callout": "引文會套用螢光標記的顏色，> [!NOTE] 會變成標註區塊",
   "Variables: {{variables}}": "變數：{{variables}}",
   "Stable Page Numbers": "穩定頁碼",
-  "Turn off to count pages by the screens of this device": "關閉後依本裝置的實際螢幕數計算頁碼"
+  "Turn off to count pages by the screens of this device": "關閉後依本裝置的實際螢幕數計算頁碼",
+  "Page Flip": "翻書",
+  "{{count}} pages_other": "{{count}} 頁",
+  "Show page count": "顯示頁數",
+  "One page": "單頁",
+  "Two pages": "雙頁",
+  "Show One Page": "顯示單頁",
+  "Show Two Pages": "顯示雙頁",
+  "Book Data": "書籍資料",
+  "Downloaded read-aloud audio and translations": "已下載的朗讀音訊與翻譯"
 }

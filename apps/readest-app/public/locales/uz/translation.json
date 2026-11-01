@@ -1880,8 +1880,6 @@
   "Audio Cache": "Audio kesh",
   "Cache Synthesized Audio": "Sintezlangan audioni keshlash",
   "Reuse generated speech across sessions without refetching": "Yaratilgan nutqni qayta yuklab olmasdan seanslar orasida qayta ishlatish",
-  "Sync Audio Cache": "Audio keshni sinxronlash",
-  "Share section audio between your devices through your file sync service": "Boʻlim audiosini fayl sinxronlash xizmati orqali qurilmalaringiz oʻrtasida ulashing",
   "Storage Limit": "Saqlash chegarasi",
   "Playback settings": "Ijro sozlamalari",
   "Player Style": "Pleyer uslubi",
@@ -2324,7 +2322,6 @@
   "{{seconds}}s": "{{seconds}} s",
   "Could not read the length of every track in this audiobook": "Bu audiokitobdagi har bir trek uzunligini o‘qib bo‘lmadi",
   "Manage the streamed audiobook paired with this ebook.": "Ushbu elektron kitobga bog‘langan oqim audiokitobini boshqaring.",
-  "Dismiss": "Yopish",
   "Failed to upload the library index. Please sync again.": "Kutubxona indeksini yuklab bo‘lmadi. Qayta sinxronlang.",
   "Search results": "Qidiruv natijalari",
   "Filter group": "Filtr guruhi",
@@ -2655,5 +2652,15 @@
   "Quotes take the highlight color, and > [!NOTE] becomes a callout": "Iqtiboslar belgilash rangini oladi, > [!NOTE] esa izoh blokiga aylanadi",
   "Variables: {{variables}}": "O‘zgaruvchilar: {{variables}}",
   "Stable Page Numbers": "Barqaror sahifa raqamlari",
-  "Turn off to count pages by the screens of this device": "Sahifalarni ushbu qurilma ekranlari bo'yicha sanash uchun o'chiring"
+  "Turn off to count pages by the screens of this device": "Sahifalarni ushbu qurilma ekranlari bo'yicha sanash uchun o'chiring",
+  "Page Flip": "Sahifani ag'darish",
+  "{{count}} pages_one": "{{count}} sahifa",
+  "{{count}} pages_other": "{{count}} sahifa",
+  "Show page count": "Sahifalar sonini ko‘rsatish",
+  "One page": "Bitta sahifa",
+  "Two pages": "Ikki sahifa",
+  "Show One Page": "Bitta sahifani ko‘rsatish",
+  "Show Two Pages": "Ikki sahifani ko‘rsatish",
+  "Book Data": "Kitob maʼlumotlari",
+  "Downloaded read-aloud audio and translations": "Yuklab olingan ovozli o‘qish audiosi va tarjimalar"
 }

@@ -258,6 +258,9 @@ export interface BookLayout {
   /* Centre gap of a two-column spread in px; 0 derives it from the margins
      and gapPercent as before. */
   columnGapPx: number;
+  /* iPhone Duo, inner display in landscape: show two pages, one on each side
+     of the hinge (true), or a single page (false). Ignored in other poses. */
+  duoBookMode: boolean;
   scrolled: boolean;
   scrolledDirection: 'vertical' | 'horizontal';
   webtoonMode: boolean;
@@ -357,7 +360,9 @@ export interface BookLanguage {
 
 // 'push' slides the whole strip; 'slide' and 'curl' layer the outgoing page
 // over the still incoming page (Apple Books style, needs View Transitions).
-export type PageTurnStyle = 'push' | 'slide' | 'curl';
+// 'flip' lifts the whole sheet over the spine. The apps' captured and native
+// turns draw it; a spread and the web turn it as a 'curl'.
+export type PageTurnStyle = 'push' | 'slide' | 'curl' | 'flip';
 export interface ViewConfig {
   sideBarTab: string;
   uiLanguage: string;

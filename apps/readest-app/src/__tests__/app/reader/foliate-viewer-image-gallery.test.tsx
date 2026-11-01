@@ -1,5 +1,5 @@
-import { act, render, waitFor } from '@testing-library/react';
-import { expect, it, vi } from 'vitest';
+import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
 import type { ComponentProps } from 'react';
 import FoliateViewer from '@/app/reader/components/FoliateViewer';
 import type ImageViewer from '@/app/reader/components/ImageViewer';
@@ -37,7 +37,12 @@ vi.mock('@/store/parallelViewStore', () => ({ useParallelViewStore: () => () => 
 vi.mock('@/store/settingsStore', () => ({
   useSettingsStore: Object.assign(() => ({ settings: {} }), { getState: () => ({ settings: {} }) }),
 }));
-vi.mock('@/store/themeStore', () => ({ useThemeStore: () => ({}) }));
+vi.mock('@/store/themeStore', () => {
+  const state = { isIPhoneDuo: false, duoFold: null, safeAreaInsets: null };
+  const useThemeStore = (selector?: (s: typeof state) => unknown) =>
+    selector ? selector(state) : state;
+  return { useThemeStore: Object.assign(useThemeStore, { getState: () => state }) };
+});
 vi.mock('@/store/customFontStore', () => ({
   useCustomFontStore: () => ({ getLoadedFonts: () => [], getAvailableFonts: () => [] }),
 }));
@@ -120,6 +125,16 @@ vi.mock('@/app/reader/components/ImageViewer', () => ({
   },
 }));
 vi.mock('@/app/reader/components/TableViewer', () => ({ default: () => null }));
+
+// Unmount each test's viewer and drop its images: a late render from a viewer
+// left mounted would overwrite the next test's gallery.viewer props.
+afterEach(() => {
+  cleanup();
+  document.body.innerHTML = '';
+  gallery.opened = false;
+  gallery.pressImage = null;
+  gallery.viewer = null;
+});
 
 // Paging the viewer to the next image jumps the book there, which can take a
 // while when the image is in another section. The new picture must not borrow

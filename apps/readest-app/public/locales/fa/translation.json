@@ -1880,8 +1880,6 @@
   "Audio Cache": "حافظه پنهان صدا",
   "Cache Synthesized Audio": "ذخیره صدای ساخته‌شده در حافظه پنهان",
   "Reuse generated speech across sessions without refetching": "استفاده دوباره از گفتار تولیدشده بین نشست‌ها بدون دریافت مجدد",
-  "Sync Audio Cache": "همگام‌سازی حافظه پنهان صدا",
-  "Share section audio between your devices through your file sync service": "اشتراک‌گذاری صدای بخش‌ها بین دستگاه‌های شما از طریق سرویس همگام‌سازی فایل",
   "Storage Limit": "محدودیت فضای ذخیره‌سازی",
   "Playback settings": "تنظیمات پخش",
   "Player Style": "سبک پخش‌کننده",
@@ -2324,7 +2322,6 @@
   "{{seconds}}s": "{{seconds}} ث",
   "Could not read the length of every track in this audiobook": "طول همهٔ قطعه‌های این کتاب صوتی خوانده نشد",
   "Manage the streamed audiobook paired with this ebook.": "مدیریت کتاب صوتی پخش‌شده جفت‌شده با این کتاب الکترونیکی.",
-  "Dismiss": "بستن",
   "Failed to upload the library index. Please sync again.": "بارگذاری فهرست کتابخانه ناموفق بود. لطفاً دوباره همگام‌سازی کنید.",
   "Search results": "نتایج جستجو",
   "Filter group": "گروه فیلتر",
@@ -2655,5 +2652,15 @@
   "Quotes take the highlight color, and > [!NOTE] becomes a callout": "نقل‌قول‌ها رنگ هایلایت را می‌گیرند و ‎> [!NOTE]‎ به کادر توضیح تبدیل می‌شود",
   "Variables: {{variables}}": "متغیرها: {{variables}}",
   "Stable Page Numbers": "شماره صفحه‌های ثابت",
-  "Turn off to count pages by the screens of this device": "برای شمارش صفحه‌ها بر اساس صفحه‌نمایش‌های این دستگاه خاموش کنید"
+  "Turn off to count pages by the screens of this device": "برای شمارش صفحه‌ها بر اساس صفحه‌نمایش‌های این دستگاه خاموش کنید",
+  "Page Flip": "ورق زدن صفحه",
+  "{{count}} pages_one": "{{count}} صفحه",
+  "{{count}} pages_other": "{{count}} صفحه",
+  "Show page count": "نمایش تعداد صفحات",
+  "One page": "یک صفحه",
+  "Two pages": "دو صفحه",
+  "Show One Page": "نمایش یک صفحه",
+  "Show Two Pages": "نمایش دو صفحه",
+  "Book Data": "داده‌های کتاب",
+  "Downloaded read-aloud audio and translations": "صدای بلندخوانی دانلودشده و ترجمه‌ها"
 }

@@ -1851,8 +1851,6 @@
   "Audio Cache": "აუდიოს ქეში",
   "Cache Synthesized Audio": "სინთეზირებული აუდიოს ქეშირება",
   "Reuse generated speech across sessions without refetching": "გამოიყენეთ გენერირებული მეტყველება სესიებს შორის ხელახლა მიღების გარეშე",
-  "Sync Audio Cache": "აუდიოს ქეშის სინქრონიზაცია",
-  "Share section audio between your devices through your file sync service": "გააზიარეთ სექციის აუდიო თქვენს მოწყობილობებს შორის ფაილების სინქრონიზაციის სერვისით",
   "Storage Limit": "საცავის ლიმიტი",
   "Extra Large": "ძალიან დიდი",
   "Word Lens data downloaded": "Word Lens-ის მონაცემები ჩამოიტვირთა",
@@ -2324,7 +2322,6 @@
   "{{seconds}}s": "{{seconds}}წმ",
   "Could not read the length of every track in this audiobook": "ამ აუდიოწიგნის ყველა ტრეკის ხანგრძლივობის წაკითხვა ვერ მოხერხდა",
   "Manage the streamed audiobook paired with this ebook.": "მართეთ ამ ელწიგნთან დაწყვილებული ნაკადური აუდიოწიგნი.",
-  "Dismiss": "დახურვა",
   "Failed to upload the library index. Please sync again.": "ბიბლიოთეკის ინდექსის ატვირთვა ვერ მოხერხდა. გთხოვთ, ხელახლა მოახდინოთ სინქრონიზაცია.",
   "Search results": "ძიების შედეგები",
   "Filter group": "ფილტრების ჯგუფი",
@@ -2655,5 +2652,15 @@
   "Quotes take the highlight color, and > [!NOTE] becomes a callout": "ციტატები მონიშვნის ფერს იღებს, ხოლო > [!NOTE] ხდება გამოყოფილი ბლოკი",
   "Variables: {{variables}}": "ცვლადები: {{variables}}",
   "Stable Page Numbers": "მუდმივი გვერდის ნომრები",
-  "Turn off to count pages by the screens of this device": "გამორთეთ, რომ გვერდები ამ მოწყობილობის ეკრანებით დაითვალოს"
+  "Turn off to count pages by the screens of this device": "გამორთეთ, რომ გვერდები ამ მოწყობილობის ეკრანებით დაითვალოს",
+  "Page Flip": "გვერდის გადაბრუნება",
+  "{{count}} pages_one": "{{count}} გვერდი",
+  "{{count}} pages_other": "{{count}} გვერდი",
+  "Show page count": "გვერდების რაოდენობის ჩვენება",
+  "One page": "ერთი გვერდი",
+  "Two pages": "ორი გვერდი",
+  "Show One Page": "ერთი გვერდის ჩვენება",
+  "Show Two Pages": "ორი გვერდის ჩვენება",
+  "Book Data": "წიგნის მონაცემები",
+  "Downloaded read-aloud audio and translations": "ჩამოტვირთული ხმამაღლა კითხვის აუდიო და თარგმანები"
 }
